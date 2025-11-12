@@ -5,6 +5,16 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow: hidden; /* Prevent page scrolling */
+}
+
+html {
+  overflow: hidden; /* Prevent page scrolling */
+  height: 100%; /* Make sure html element is exactly the height of the viewport */
+}
+
+#root {
+  height: 100vh; /* Make sure the root element fills the full viewport */
 }
 
 code {
