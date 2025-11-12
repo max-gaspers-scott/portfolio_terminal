@@ -1,5 +1,14 @@
 .App {
-  text-align: center;
+  text-align: left;
+  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 20px;
+  overflow: hidden; /* Prevent any page scrolling */
+  margin: 0; /* Remove default margin */
 }
 
 .App-logo {
@@ -26,6 +35,41 @@
 
 .App-link {
   color: #61dafb;
+}
+
+.terminal-container {
+  position: relative;
+  border-radius: 0px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  background-color: #0a3d1f; /* Dark green background for the terminal container */
+}
+
+/* Hide scrollbar for xterm.js */
+.terminal-content {
+  overflow: hidden;
+}
+
+.terminal-content .xterm-viewport {
+  overflow: hidden !important;
+}
+
+/* Hide scrollbar for Webkit browsers (Chrome, Safari, newer Edge) */
+.terminal-content::-webkit-scrollbar {
+  display: none;
+}
+
+.terminal-content .xterm-viewport::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for Firefox */
+.terminal-content {
+  scrollbar-width: none;
+}
+
+.terminal-content .xterm-viewport {
+  scrollbar-width: none;
 }
 
 @keyframes App-logo-spin {
