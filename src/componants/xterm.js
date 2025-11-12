@@ -126,11 +126,12 @@ function XTermTerminal() {
         width: '600px',
         height: '300px',
         margin: '20px auto 0', // Center the div with top margin but no bottom margin
-        background: 'radial-gradient(circle at var(--mouse-x) var(--mouse-y), #1a6638, #0a3d1f)',
+        background: 'transparent',
         '--mouse-x': '50%',
         '--mouse-y': '50%',
-        borderRadius: '8px',
+        borderRadius: '4px',
         overflow: 'hidden',
+        border: '6px solid #000000', /* Black border, 6px thick */
       }}
     >
       <div 
