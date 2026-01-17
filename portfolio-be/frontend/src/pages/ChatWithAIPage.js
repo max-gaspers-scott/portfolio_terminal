@@ -30,10 +30,7 @@ const ChatWithAIPage = () => {
         },
         body: JSON.stringify({
           message: inputValue,
-          history: messages.filter(msg => msg.sender === 'user' || msg.sender === 'ai').map(msg => ({
-            sender: msg.sender,
-            text: msg.text
-          })).slice(-10) // Limit history to last 10 exchanges to prevent overly long prompts
+          session_id: 'user-session' // Optional session ID for conversation continuity
         })
       });
 
