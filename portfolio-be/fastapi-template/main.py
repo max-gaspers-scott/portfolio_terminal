@@ -1,11 +1,11 @@
 import os
-import re
-from google import genai
-from google.genai import types
 from typing import Dict, Optional
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 import logging
+from langchain.memory import ConversationBufferMemory
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.chains import ConversationChain
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -13,8 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 # System instructions to provide context about Max Gaspers Scott
-system_instructions = """
-Hear is the context for ansering the fallowing questions. use only the context given here:
+system_instructions = """Here is the context for answering the following questions. Use only the context given here:
 
 You are an AI assistant that answers questions about Max Gaspers Scott (M.G.S).
 
@@ -90,8 +89,40 @@ async def health_check() -> Dict[str, str]:
     return {"status": "healthy"}
 
 
-# Store chat objects per session
-chat_sessions = {}
+# Store conversation chains per session
+conversation_chains = {}
+
+
+def get_conversation_chain(session_id: str):
+    """Get or create a conversation chain for a given session."""
+    if session_id not in conversation_chains:
+        # Initialize the LLM
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-3-flash-preview",
+            google_api_key=os.getenv("GEMINI_API_KEY"),
+            temperature=0.7
+        )
+
+        # Initialize memory for the conversation
+        memory = ConversationBufferMemory(
+            input_key="input",
+            memory_key="history",
+            return_messages=True  # Return messages as objects instead of strings
+        )
+
+        # Create the conversation chain
+        conversation_chain = ConversationChain(
+            llm=llm,
+            memory=memory,
+            verbose=True
+        )
+
+        # Add the system instructions as the first AI message to establish context
+        conversation_chain.memory.chat_memory.add_ai_message(system_instructions)
+
+        conversation_chains[session_id] = conversation_chain
+
+    return conversation_chains[session_id]
 
 
 @app.post("/api/chat")
@@ -102,26 +133,18 @@ async def chat(request: Request, chat_request: ChatRequest):
         # Use session_id or fallback to client IP
         session_id = chat_request.session_id or request.client.host
 
-        # Create new chat session if it doesn't exist
-        if session_id not in chat_sessions:
-            client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-            chat_sessions[session_id] = client.chats.create(
-                model="gemini-3-flash-preview",
-                config=types.GenerateContentConfig(
-                    system_instruction=system_instructions
-                ),
-            )
+        # Get or create the conversation chain for this session
+        conversation_chain = get_conversation_chain(session_id)
 
-        chat = chat_sessions[session_id]
-        response = chat.send_message(chat_request.message)
+        # Generate response using the conversation chain
+        response = conversation_chain.invoke({"input": chat_request.message})
+
+        # Extract the response text
+        response_text = response.get("response", "Sorry, I couldn't generate a response.")
 
         return {
-            "response": response.text.strip(),
+            "response": response_text.strip(),
             "session_id": session_id,
-            "history": [
-                {"role": msg.role, "text": msg.parts[0].text}
-                for msg in chat.get_history()
-            ],
         }
 
     except Exception as e:

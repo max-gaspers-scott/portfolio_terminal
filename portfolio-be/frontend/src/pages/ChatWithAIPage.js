@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const ChatWithAIPage = () => {
   const [messages, setMessages] = useState([
@@ -6,13 +6,28 @@ const ChatWithAIPage = () => {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
+
+  // Generate a unique session ID on component mount
+  useEffect(() => {
+    // Check if we already have a session ID in localStorage
+    const storedSessionId = localStorage.getItem('chat_session_id');
+    if (storedSessionId) {
+      setSessionId(storedSessionId);
+    } else {
+      // Generate a new session ID
+      const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      localStorage.setItem('chat_session_id', newSessionId);
+      setSessionId(newSessionId);
+    }
+  }, []);
 
   const handleSendMessage = async () => {
-    if (inputValue.trim() === '' || isLoading) return;
+    if (inputValue.trim() === '' || isLoading || !sessionId) return;
 
     // Add user message
     const newUserMessage = {
-      id: messages.length + 1,
+      id: Date.now(),
       sender: 'user',
       text: inputValue
     };
@@ -30,7 +45,7 @@ const ChatWithAIPage = () => {
         },
         body: JSON.stringify({
           message: inputValue,
-          session_id: 'user-session' // Optional session ID for conversation continuity
+          session_id: sessionId
         })
       });
 
@@ -41,7 +56,7 @@ const ChatWithAIPage = () => {
       const data = await response.json();
 
       const newAiMessage = {
-        id: messages.length + 2,
+        id: Date.now() + 1,
         sender: 'ai',
         text: data.response || 'Sorry, I couldn\'t generate a response.'
       };
@@ -51,7 +66,7 @@ const ChatWithAIPage = () => {
       console.error('Error sending message:', error);
 
       const errorMessage = {
-        id: messages.length + 2,
+        id: Date.now() + 1,
         sender: 'ai',
         text: 'Sorry, I encountered an error. Please try again.'
       };
@@ -65,6 +80,20 @@ const ChatWithAIPage = () => {
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !isLoading) {
       handleSendMessage();
+    }
+  };
+
+  // Clear chat history function
+  const handleClearChat = () => {
+    if (window.confirm('Are you sure you want to clear the chat history?')) {
+      setMessages([
+        { id: 1, sender: 'ai', text: 'Hello! I\'m your AI assistant. How can I help you today?' }
+      ]);
+
+      // Generate a new session ID to start fresh
+      const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      localStorage.setItem('chat_session_id', newSessionId);
+      setSessionId(newSessionId);
     }
   };
 
@@ -104,17 +133,49 @@ const ChatWithAIPage = () => {
         display: 'flex',
         flexDirection: 'column'
       }}>
-        <h1 style={{
-          fontSize: '2rem',
-          marginBottom: '20px',
-          fontWeight: 'bold',
-          color: '#00ff00',
-          textShadow: '0 0 10px rgba(0, 255, 0, 0.7)',
-          letterSpacing: '1px',
-          textAlign: 'center'
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '20px'
         }}>
-          CHAT WITH AI
-        </h1>
+          <h1 style={{
+            fontSize: '2rem',
+            fontWeight: 'bold',
+            color: '#00ff00',
+            textShadow: '0 0 10px rgba(0, 255, 0, 0.7)',
+            letterSpacing: '1px',
+            textAlign: 'center',
+            margin: 0
+          }}>
+            CHAT WITH AI
+          </h1>
+
+          <button
+            onClick={handleClearChat}
+            style={{
+              padding: '8px 12px',
+              backgroundColor: 'transparent',
+              color: '#ff6b6b',
+              border: '1px solid #ff6b6b',
+              cursor: 'pointer',
+              fontFamily: "'Courier New', monospace",
+              fontSize: '0.9rem',
+              boxShadow: '0 0 5px rgba(255, 107, 107, 0.3)',
+              transition: 'all 0.3s'
+            }}
+            onMouseOver={(e) => {
+              e.target.style.background = 'rgba(255, 107, 107, 0.1)';
+              e.target.style.boxShadow = '0 0 10px rgba(255, 107, 107, 0.5)';
+            }}
+            onMouseOut={(e) => {
+              e.target.style.background = 'transparent';
+              e.target.style.boxShadow = '0 0 5px rgba(255, 107, 107, 0.3)';
+            }}
+          >
+            CLEAR CHAT
+          </button>
+        </div>
 
         <div style={{
           flex: 1,
@@ -160,6 +221,7 @@ const ChatWithAIPage = () => {
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Type your message here..."
+            disabled={isLoading || !sessionId}
             style={{
               flex: 1,
               padding: '12px',
@@ -173,26 +235,26 @@ const ChatWithAIPage = () => {
           />
           <button
             onClick={handleSendMessage}
-            disabled={isLoading}
+            disabled={isLoading || !sessionId}
             style={{
               padding: '12px 24px',
-              backgroundColor: isLoading ? 'rgba(0, 50, 0, 0.5)' : 'transparent',
+              backgroundColor: isLoading || !sessionId ? 'rgba(0, 50, 0, 0.5)' : 'transparent',
               color: '#00ff00',
               border: '1px solid #00ff00',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
+              cursor: (isLoading || !sessionId) ? 'not-allowed' : 'pointer',
               fontFamily: "'Courier New', monospace",
               fontSize: '1rem',
-              boxShadow: isLoading ? 'none' : '0 0 10px rgba(0, 255, 0, 0.3)',
+              boxShadow: (isLoading || !sessionId) ? 'none' : '0 0 10px rgba(0, 255, 0, 0.3)',
               transition: 'all 0.3s'
             }}
             onMouseOver={(e) => {
-              if (!isLoading) {
+              if (!(isLoading || !sessionId)) {
                 e.target.style.background = 'rgba(0, 255, 0, 0.1)';
                 e.target.style.boxShadow = '0 0 15px rgba(0, 255, 0, 0.5)';
               }
             }}
             onMouseOut={(e) => {
-              if (!isLoading) {
+              if (!(isLoading || !sessionId)) {
                 e.target.style.background = 'transparent';
                 e.target.style.boxShadow = '0 0 10px rgba(0, 255, 0, 0.3)';
               }
