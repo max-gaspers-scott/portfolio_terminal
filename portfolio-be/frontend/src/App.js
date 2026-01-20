@@ -21,6 +21,7 @@ function App() {
             } />
             <Route path="/project1" element={<Project1Page />} />
             <Route path="/chat" element={<ChatWithAIPage />} />
+
           </Routes>
         </main>
       </div>

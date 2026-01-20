@@ -1,6 +1,10 @@
 use axum::http::Method;
 use axum::http::StatusCode;
-use axum::{Json, Router, extract::Path, routing::{get, post}};
+use axum::{
+    Json, Router,
+    extract::Path,
+    routing::{get, post},
+};
 use minio_rsc::{Minio, client::PresignedArgs, provider::StaticProvider};
 use serde_json::{Value, json};
 use sqlx::postgres::PgPoolOptions;
@@ -157,7 +161,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/health", get(health))
         .route("/signed-urls/:video_path", get(get_signed_url))
         .route("/python", get(python))
-        .route("/api/chat", post(chat_endpoint))  // Add the chat endpoint
+        .route("/api/chat", post(chat_endpoint)) // Add the chat endpoint
         .fallback_service(static_service)
         .layer(
             CorsLayer::new()

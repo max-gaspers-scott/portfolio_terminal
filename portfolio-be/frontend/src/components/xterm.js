@@ -7,9 +7,17 @@ import { io } from 'socket.io-client';
 
 const files = {
   'about-me.txt': 'My name is max. \r\nIm a software engineer. I\'ve worked across the stack \r\nand like working in fast pased invirenments where I can have an impact on users',
-  'file2.js': 'this is the contents of file 2',
-  'notes.md': 'here are some notes '
+  'skills.json': `
+{\r\n
+\t"Rust": ["basics", "Axum", "algorithoms", "ratatui"],\r\n
+\t"Python": ["basics", "Pytorch", "plotly", "jupyter notebooks", "skykitlearn", "fastAPI", "Ray (distributed ML)"],\r\n
+\t"Javascript": ["Node.js", "React"],\r\n
+\t"Postgres SQL": ["schema definitions", "sqlx"],\r\n
+\t"Google Cloud Platform": ["firebase", "firestor", "cloud functions", "blob storage", "secrets maniger"],\r\n
+}
+  `
 };
+// "tools": ["git", "docker", "linux"]\r\n
 
 const fitAddon = new FitAddon();
 
@@ -24,8 +32,8 @@ function XTermTerminal() {
   const socketRef = useRef(null);
 
   useEffect(() => {
-    // Connect to WebSocket server
-    socketRef.current = io('http://localhost:8081'); // Connect to the backend server
+    // Connect to WebSocket server - use relative path when served from same origin
+    socketRef.current = io(); // Connect to the same origin as the webpage
 
     socketRef.current.on('connect', () => {
       console.log('Connected to WebSocket server');
@@ -73,11 +81,11 @@ function XTermTerminal() {
             xtermRef.current.write('\r\n');
 
             // Check if it's a local command first
-            // if (command.trim() === 'ls') {
-            //   xtermRef.current.write(Object.keys(files).join('\r\n') + '\r\n$ ');
-            //   command = '';
-            //   return;
-            // } else
+            if (command.trim() === 'ls') {
+              xtermRef.current.write(Object.keys(files).join('\r\n') + '\r\n$ ');
+              command = '';
+              return;
+            } else
             if (command.trim().split(" ")[0] === 'cat') {
               const fileName = command.trim().split(" ")[1];
               if (files[fileName]) {
@@ -95,12 +103,17 @@ function XTermTerminal() {
               xtermRef.current.write("Available commands: ls, cat [filename], help\r\n$ ");
               command = '';
               return;
+            } else if (command.trim() === 'ssh') {
+              socketRef.current.emit('terminal_input', command.trim());
+            }else {
+              socketRef.current.emit('terminal_input', command.trim());
+              
             }
 
             // Send the command to the backend via WebSocket
-            if (socketRef.current && command.trim() !== '') {
-              socketRef.current.emit('terminal_input', command.trim());
-            }
+            // if (socketRef.current && command.trim() !== '') {
+            //   socketRef.current.emit('terminal_input', command.trim());
+            // }
 
             command = '';
           } else if (data.charCodeAt(0) === 127) { // Backspace
